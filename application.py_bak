@@ -1,0 +1,70 @@
+from flask import Flask, redirect, request, render_template
+
+import boto3
+
+app = Flask(__name__, static_url_path='/static')
+
+@app.route("/")
+def home():
+    return redirect("/login")
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        # Add code here to handle the login form submission
+        # You can check the username and password and redirect to another page on successful login.
+        return "Login successful, redirect to another page."
+    return render_template("login.html")
+
+
+def create_login_table(dynamodb=None):
+    if not dynamodb:
+        dynamodb = boto3.resource('dynamodb')
+
+    table = dynamodb.create_table(
+        TableName='Login',
+        KeySchema=[
+            {
+                'AttributeName': 'email',
+                'KeyType': 'HASH'  # Partition key
+            },
+        ],
+        AttributeDefinitions=[
+            {
+                'AttributeName': 'email',
+                'AttributeType': 'S'
+            },
+        ],
+        ProvisionedThroughput={
+            'ReadCapacityUnits': 10,
+            'WriteCapacityUnits': 10
+        }
+    )
+    return table
+
+def generate_password(i):
+    # Generate the password using a loop, similar to your old example
+    return ''.join(str(j % 10) for j in range(i, i + 6))
+
+def insert_initial_logins(dynamodb=None):
+    if not dynamodb:
+        dynamodb = boto3.resource('dynamodb')
+
+    table = dynamodb.Table('Login')
+    for i in range(10):
+        email = f"s3######{i}@student.rmit.edu.au"
+        username = f"Firstname Lastname{i}"
+        password = generate_password(i)
+
+        item = {
+            'email': email,
+            'user_name': username,
+            'password': password
+        }
+        
+        table.put_item(Item=item)
+
+if __name__ == '__main__':
+    #login_table = create_login_table()
+    #print("Table status:", login_table.table_status)
+    insert_initial_logins()
