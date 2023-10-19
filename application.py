@@ -1,5 +1,6 @@
 from flask import Flask, redirect, request, render_template, flash
 
+import json
 
 import boto3
 
@@ -137,8 +138,87 @@ def insert_initial_logins(dynamodb=None):
         
         table.put_item(Item=item)
 
+# Initialize the DynamoDB resource and specify the region
+dynamodb = boto3.resource('dynamodb', region_name='us-east-1')
+
+# Define the table name and attributes
+table_name = 'music'
+table_attributes = [
+    {
+        'AttributeName': 'title',
+        'AttributeType': 'S'
+    },
+    {
+        'AttributeName': 'artist',
+        'AttributeType': 'S'
+    },
+    {
+        'AttributeName': 'year',
+        'AttributeType': 'N'
+    },
+    {
+        'AttributeName': 'web_url',
+        'AttributeType': 'S'
+    },
+    {
+        'AttributeName': 'image_url',
+        'AttributeType': 'S'
+    }
+]
+
+def table_exists(table_name):
+    # Check if the table exists
+    existing_tables = dynamodb.meta.client.list_tables()
+    return table_name in existing_tables['TableNames']
+
+def create_music_table():
+    if not table_exists(table_name):
+        try:
+            table = dynamodb.create_table(
+                TableName=table_name,
+                KeySchema=[
+                    {
+                        'AttributeName': 'title',
+                        'KeyType': 'HASH'  # Partition key
+                    }
+                ],
+                AttributeDefinitions=[
+                    {
+                        'AttributeName': 'title',
+                        'AttributeType': 'S'
+                    }
+                ],
+                ProvisionedThroughput={
+                    'ReadCapacityUnits': 5,
+                    'WriteCapacityUnits': 5
+                }
+            )
+            table.wait_until_exists()
+            print(f'Table {table_name} has been created.')
+        except Exception as e:
+            print(f'Error creating table: {e}')
+    else:
+        print(f'Table {table_name} already exists. Skipping table creation.')
+
+def load_data_to_table():
+    # Check if the table already has data
+    table = dynamodb.Table(table_name)
+    if table.item_count > 0:
+        print(f'Table {table_name} already has data. Skipping data loading.')
+        return
+
+    try:
+        with open('a2.json', 'r') as json_file:
+            data = json.load(json_file)
+            songs = data.get('songs', [])  # Access the "songs" key in the JSON data
+
+            for item in songs:
+                table.put_item(Item=item)
+            print(f'Data has been loaded into the {table_name} table.')
+    except Exception as e:
+        print(f'Error loading data: {e}')
 
 if __name__ == '__main__':
-    login_table = create_login_table()
-    insert_initial_logins()
+    create_music_table()  # Create the DynamoDB table if it doesn't exist
+    load_data_to_table()  # Load data from a2.json into the table if it's empty
     app.run(host='0.0.0.0')
