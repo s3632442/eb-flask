@@ -1,6 +1,6 @@
 
 
-from flask import Flask, redirect, request, render_template, flash
+from flask import Flask, redirect, request, render_template, flash, session
 
 import json
 import os
@@ -46,6 +46,7 @@ def read_all_entities(table_name):
         return []
 
 @app.route("/login", methods=["GET", "POST"])
+@app.route("/login", methods=["GET", "POST"])
 def login():
     login_details = []  # Initialize an empty list for login details
     
@@ -54,6 +55,7 @@ def login():
     login_details = read_all_entities(table_name)  # Get login details
 
     if request.method == "POST":
+        # Obtain the provided username and password
         provided_username = request.form.get("username")
         provided_password = request.form.get("password")
     
@@ -62,7 +64,8 @@ def login():
                 provided_username == entity["user_name"] and
                 provided_password == entity["password"]
             ):
-                # Valid credentials, redirect to user-home page
+                # Valid credentials, redirect to user-home page and store user_name in the session
+                session['user_name'] = entity["user_name"]
                 flash("Logged in")
                 return redirect("/user-home")
 
@@ -70,6 +73,7 @@ def login():
         flash("Invalid username or password")
     
     return render_template("login.html", login_details=login_details)
+
 
 @app.route("/user-home")
 def user_home():
@@ -312,14 +316,10 @@ def table_exists_and_populated(table_name, dynamodb):
 
 if not table_exists_and_populated(table_name, dynamodb):
     create_music_table()  # Create the DynamoDB table if it doesn't exist
-    download_and_upload_images('a2.json')  # Pass the path to the JSON file
-
-
-if __name__ == '__main__':
-    create_music_table()  # Create the DynamoDB table if it doesn't exist
     load_data_to_table()  # Load data from a2.json into the table if it's empty
-
     json_file_path = 'a2.json'  # Define the path to your JSON file
     download_and_upload_images(json_file_path)  # Pass json_file_path as an argument
 
+
+if __name__ == '__main__':    
     app.run(host='0.0.0.0')
