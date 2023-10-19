@@ -44,11 +44,11 @@ def read_all_entities(table_name):
     except Exception as e:
         print("An error occurred:", e)
         return []
-
+    
 @app.route("/login", methods=["GET", "POST"])
 def login():
     login_details = []  # Initialize an empty list for login details
-    
+
     # Retrieve login details from DynamoDB
     table_name = 'Login'  # Replace with your table name
     login_details = read_all_entities(table_name)  # Get login details
@@ -56,11 +56,11 @@ def login():
     if request.method == "POST":
         provided_username = request.form.get("username")
         provided_password = request.form.get("password")
-    
+
         for entity in login_details:
             if (
-                provided_username == entity["user_name"] and
-                provided_password == entity["password"]
+                provided_username == entity["user_name"]
+                and provided_password == entity["password"]
             ):
                 # Valid credentials, redirect to user-home page
                 flash("Logged in")
@@ -68,8 +68,9 @@ def login():
 
         # Invalid credentials, show an error message
         flash("Invalid username or password")
-    
+
     return render_template("login.html", login_details=login_details)
+
 
 @app.route("/user-home")
 def user_home():
@@ -310,16 +311,13 @@ def table_exists_and_populated(table_name, dynamodb):
     except Exception as e:
         return False
 
-if not table_exists_and_populated(table_name, dynamodb):
-    create_music_table()  # Create the DynamoDB table if it doesn't exist
-    download_and_upload_images('a2.json')  # Pass the path to the JSON file
-
 
 if __name__ == '__main__':
-    create_music_table()  # Create the DynamoDB table if it doesn't exist
-    load_data_to_table()  # Load data from a2.json into the table if it's empty
 
-    json_file_path = 'a2.json'  # Define the path to your JSON file
-    download_and_upload_images(json_file_path)  # Pass json_file_path as an argument
+    if not table_exists_and_populated(table_name, dynamodb):
+        create_music_table()  # Create the DynamoDB table if it doesn't exist
+        load_data_to_table()  # Load data from a2.json into the table if it's empty
+        json_file_path = 'a2.json'  # Define the path to your JSON file
+        download_and_upload_images(json_file_path)  # Pass json_file_path as an argument
 
     app.run(host='0.0.0.0')
