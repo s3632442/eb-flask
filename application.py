@@ -1,14 +1,23 @@
+
+
 from flask import Flask, redirect, request, render_template, flash
 
 import json
-
+import os
+import requests
 import boto3
 
 app = Flask(__name__, static_url_path='/static')
 app.secret_key = 'ac3b06a1-6db9-4e2a-b74a-ea24572ed710'
 
+
 # Initialize the DynamoDB resource and specify the region
 dynamodb = boto3.resource('dynamodb', region_name='us-east-1')
+s3 = boto3.client('s3', region_name='us-east-1')  # Replace 'us-east-1' with your desired region
+
+# Define the table name and attributes for the music table
+table_name = 'music'
+
 
 @app.route("/")
 def home():
@@ -171,7 +180,7 @@ def table_exists(table_name):
     return table_name in existing_tables['TableNames']
 
 def create_music_table():
-    if not table_exists(table_name):
+    if not table_exists_and_populated(table_name, dynamodb):
         try:
             table = dynamodb.create_table(
                 TableName=table_name,
@@ -197,11 +206,15 @@ def create_music_table():
         except Exception as e:
             print(f'Error creating table: {e}')
     else:
-        print(f'Table {table_name} already exists. Skipping table creation.')
+        print(f'Table {table_name} already exists and is populated. Skipping table creation.')
 
 def load_data_to_table():
     # Check if the table already has data
     table = dynamodb.Table(table_name)
+
+    # Define a condition to check if data already exists
+    condition = "attribute_not_exists(title)"
+
     if table.item_count > 0:
         print(f'Table {table_name} already has data. Skipping data loading.')
         return
@@ -212,27 +225,17 @@ def load_data_to_table():
             songs = data.get('songs', [])  # Access the "songs" key in the JSON data
 
             for item in songs:
-                table.put_item(Item=item)
-            print(f'Data has been loaded into the {table_name} table.')
+                # Check if the item with the given title doesn't already exist
+                if not table.get_item(Key={'title': item['title']}, ConsistentRead=True).get("Item"):
+                    # Item with the same title doesn't exist, so put the item
+                    table.put_item(Item=item)
+                    print(f'Data has been loaded for {item["title"]}.')
+                else:
+                    print(f'Data for {item["title"]} already exists. Skipping.')
+
     except Exception as e:
         print(f'Error loading data: {e}')
 
-from flask import Flask, redirect, request, render_template, flash
-
-import json
-import os
-import requests
-import boto3
-
-app = Flask(__name__, static_url_path='/static')
-app.secret_key = 'ac3b06a1-6db9-4e2a-b74a-ea24572ed710'
-
-# ... (Your existing code)
-
-# Path to your a2.json file
-json_file_path = 'a2.json'
-
-# ... (Your existing code)
 
 def image_exists_in_s3(s3, bucket_name, s3_object_key):
     try:
@@ -243,16 +246,17 @@ def image_exists_in_s3(s3, bucket_name, s3_object_key):
         # An exception is raised if the object doesn't exist
         return False
 
-def download_and_upload_images():
+def download_and_upload_images(json_file_path):
+    if not table_exists_and_populated(table_name, dynamodb):
+        print(f'Table {table_name} does not exist or is empty. Skipping image download.')
+        return
+
     # Load the JSON data
     with open(json_file_path, 'r') as json_file:
         data = json.load(json_file)
 
     # Define the S3 bucket name
     bucket_name = '201c4962-cb1a-4775-9b92-889393597be0'
-
-
-    s3 = boto3.client('s3', region_name='us-east-1')  # Replace 'us-east-1' with your desired region
 
     # Check if the S3 bucket exists, and create it if not
     if bucket_name not in [bucket['Name'] for bucket in s3.list_buckets()['Buckets']]:
@@ -297,13 +301,25 @@ def download_and_upload_images():
             print(f'Failed to download the image for {artist_name}.')
 
     print('Image upload to S3 completed.')
+    
+def table_exists_and_populated(table_name, dynamodb):
+    try:
+        table = dynamodb.Table(table_name)
+        response = table.scan()
+        return table.table_status == 'ACTIVE' and len(response.get('Items', [])) > 0
+    except Exception as e:
+        return False
 
-# ... (Your existing code)
+if not table_exists_and_populated(table_name, dynamodb):
+    create_music_table()  # Create the DynamoDB table if it doesn't exist
+    download_and_upload_images('a2.json')  # Pass the path to the JSON file
+
 
 if __name__ == '__main__':
     create_music_table()  # Create the DynamoDB table if it doesn't exist
     load_data_to_table()  # Load data from a2.json into the table if it's empty
 
-    download_and_upload_images()  # Download and upload artist images to S3
+    json_file_path = 'a2.json'  # Define the path to your JSON file
+    download_and_upload_images(json_file_path)  # Pass json_file_path as an argument
 
     app.run(host='0.0.0.0')
