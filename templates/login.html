@@ -9,11 +9,23 @@
             <label for="username">Username:</label>
             <input type="text" name="username" id="username" required>
             <br>
-            <label for "password">Password:</label>
+            <label for="password">Password:</label>
             <input type="password" name="password" id="password" required>
             <br>
             <input type="submit" value="Login">
         </form>
+    </div>
+    
+    <div class="login-details">
+        <h2>Login Details</h2>
+        <ul>
+            {% for login_detail in login_details %}
+                <li>Email: {{ login_detail.email }}</li>
+                <li>Username: {{ login_detail.user_name }}</li>
+                <li>Password: {{ login_detail.password }}</li>
+                <br>
+            {% endfor %}
+        </ul>
     </div>
 </body>
 </html>
