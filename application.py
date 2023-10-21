@@ -86,23 +86,17 @@ def user_home():
         # Retrieve the user's subscriptions from DynamoDB
         subscriptions = get_user_subscriptions(user_name)
 
-        # Retrieve additional information about the subscribed music (title, artist, and release_year)
+        # Create a list to store subscribed music
         subscribed_music = []
-        music_table = dynamodb.Table(music_table_name)  # Replace 'music_table_name' with the correct table name
 
+        # Get a reference to the DynamoDB music table
+        music_table = dynamodb.Table(music_table_name)  # Add this line
+
+        # Iterate through the subscriptions and add the subscribed music to the list
         for subscription in subscriptions:
-            print("Subscribe route is executed")
-            title = request.form.get("title")
-            release_year = request.form.get("release_year")
-            artist = request.form.get("artist")
-            img_url = request.form.get("img_url")
-            user_name = session['user_name']
-            print("Title:", title)
-            print("release_year:", release_year)
-            print("Artist:", artist)
-            print("Image URL:", img_url)
-            print("User Name:", user_name)
-
+            title = subscription['title']
+            release_year = subscription['release_year']
+            artist = subscription['artist']
 
             # Query the music table to get additional information
             response = music_table.get_item(
@@ -112,13 +106,12 @@ def user_home():
             if 'Item' in response:
                 music_info = response['Item']
                 subscribed_music.append({
-                    'title': subscription['title'],
-                    'artist': subscription['artist'],
-                    'release_year': subscription['release_year'],
+                    'title': title,
+                    'artist': artist,
+                    'release_year': release_year,
                     'web_url': music_info.get('web_url'),
                     'img_url': music_info.get('image_url')
                 })
-
 
         return render_template("main-page.html", subscriptions=subscribed_music)
     else:
@@ -370,6 +363,8 @@ def logout():
 
 music_table_name = 'music'
 
+# ... (your other code)
+
 @app.route("/search", methods=["GET", "POST"])
 def search():
     # Retrieve user input from the form or query parameters
@@ -420,20 +415,54 @@ def search():
         message = "Please enter search criteria."
         return render_template("main-page.html", message=message)
 
-    # Create a DynamoDB query based on the filter expression
+    # Create a DynamoDB query based on the filter expression for search results
     query = table.scan(
         FilterExpression=filter_expression,
         ExpressionAttributeValues=expression_attribute_values
     )
 
-    # Retrieve the matching items
-    items = query.get("Items", [])
+    # Retrieve the matching items (search results)
+    search_results = query.get("Items", [])
 
-    # After the query
-    print("Query results:", items)
+    if 'user_name' in session:
+        user_name = session['user_name']
 
-    # Pass the search results to the main-page template
-    return render_template("main-page.html", search_results=items)
+        # Retrieve the user's subscriptions from DynamoDB
+        subscriptions = get_user_subscriptions(user_name)
+
+        # Create a list to store subscribed music
+        subscribed_music = []
+
+        # Get a reference to the DynamoDB music table
+        music_table = dynamodb.Table(music_table_name)
+
+        # Iterate through the subscriptions and add the subscribed music to the list
+        for subscription in subscriptions:
+            title = subscription['title']
+            release_year = subscription['release_year']
+            artist = subscription['artist']
+
+            # Query the music table to get additional information
+            response = music_table.get_item(
+                Key={'title': title}
+            )
+
+            if 'Item' in response:
+                music_info = response['Item']
+                subscribed_music.append({
+                    'title': title,
+                    'artist': artist,
+                    'release_year': release_year,
+                    'web_url': music_info.get('web_url'),
+                    'img_url': music_info.get('image_url')
+                })
+
+        # Pass the subscribed music and search results to the main-page template
+        return render_template("main-page.html", subscriptions=subscribed_music, search_results=search_results)
+
+    # Pass only the search results to the main-page template
+    return render_template("main-page.html", search_results=search_results)
+
 
 @app.route("/subscribe", methods=["POST"])
 def subscribe():
@@ -591,6 +620,40 @@ def get_user_subscriptions(user_name):
     except Exception as e:
         print("An error occurred:", e)
         return []
+
+
+@app.route("/unsubscribe", methods=["POST"])
+def unsubscribe():
+    if 'user_name' not in session:
+        flash("Please log in to unsubscribe.")
+        return redirect("/login")
+
+    # Retrieve the details of the music item to unsubscribe
+    title = request.form.get("title")
+    release_year = int(request.form.get("year"))
+    artist = request.form.get("artist")
+    user_name = session['user_name']
+
+    # Get a reference to the DynamoDB subscriptions table
+    subscriptions_table = dynamodb.Table(subscriptions_table_name)
+
+    # Delete the subscription entry
+    response = subscriptions_table.delete_item(
+        Key={
+            'user_name': user_name,
+            'title': title,
+            'release_year': release_year,
+            'artist': artist
+        }
+    )
+
+    if response['ResponseMetadata']['HTTPStatusCode'] == 200:
+        flash(f"Unsubscribed from '{title}' by {artist}")
+    else:
+        flash("Failed to unsubscribe")
+
+    return redirect("/main-page")
+
 
 
 # Define the table name and attributes for the music table
