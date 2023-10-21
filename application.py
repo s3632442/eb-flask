@@ -355,7 +355,7 @@ def search():
 
     # Create a filter expression based on user input
     filter_expression_parts = []
-    
+
     if artist:
         filter_expression_parts.append("contains(artist, :artist)")
         expression_attribute_values[":artist"] = artist
@@ -373,6 +373,12 @@ def search():
     # Debug: Print the filter expression after combining user input
     print("Filter Expression after Combining User Input:", filter_expression)
 
+    # Check if no search criteria are provided
+    if not filter_expression:
+        # Handle the case where no attributes are passed in
+        message = "Please enter search criteria."
+        return render_template("main-page.html", message=message)
+
     # Create a DynamoDB query based on the filter expression
     query = table.scan(
         FilterExpression=filter_expression,
@@ -387,9 +393,6 @@ def search():
 
     # Pass the search results to the main-page template
     return render_template("main-page.html", search_results=items)
-
-
-
 
 
 if __name__ == '__main__':    
