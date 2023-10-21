@@ -22,7 +22,6 @@
                     {% for item in subscriptions %}
                         <li>
                             Title: {{ item.title }}, Year: {{ item.release_year }}, Artist: {{ item.artist }}
-                            <img src="{{ item.img_url }}" alt="{{ item.artist }} Image">
                             <form method="post" action="/unsubscribe">
                                 <input type="hidden" name="title" value="{{ item.title }}">
                                 <input type="hidden" name="year" value="{{ item.release_year }}">

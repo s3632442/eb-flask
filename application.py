@@ -470,12 +470,16 @@ def subscribe():
         flash("Please log in to subscribe.")
         return redirect("/login")
 
-    # Retrieve the subscribed music details from the request query parameters
-    title = request.args.get("title")
-    release_year = request.args.get("release_year")
-    artist = request.args.get("artist")
-    img_url = request.args.get("img_url")
+    # Retrieve the subscribed music details from the request form
+    title = request.form.get("title")
+    artist = request.form.get("artist")
     user_name = session['user_name']
+
+    # Check if release_year is provided in the form
+    if "release_year" in request.form:
+        release_year = int(request.form["release_year"])
+    else:
+        release_year = None  # Set release_year to None if not provided
 
     # Create a new item in the subscriptions table to store the subscription information
     table = dynamodb.Table(subscriptions_table_name)
@@ -483,14 +487,14 @@ def subscribe():
     table.put_item(Item={
         'user_name': user_name,
         'title': title,
-        'release_year': int(release_year),  # Parse release_year as an integer
+        'release_year': release_year,
         'artist': artist
     })
 
     flash(f"Subscribed to '{title}' by {artist}")
 
-    # Redirect the user back to the search results with query parameters
-    return redirect(f"/search?title={title}&release_year={release_year}&artist={artist}")
+    # Redirect the user back to the main-page
+    return redirect("/main-page")
 
 def delete_all_tables():
     # Initialize the DynamoDB resource
@@ -630,9 +634,16 @@ def unsubscribe():
 
     # Retrieve the details of the music item to unsubscribe
     title = request.form.get("title")
-    release_year = int(request.form.get("year"))
     artist = request.form.get("artist")
     user_name = session['user_name']
+
+    # Check if release_year is provided in the form
+    release_year = request.form.get("year")
+
+    if release_year is not None and release_year.isdigit():
+        release_year = int(release_year)
+    else:
+        release_year = None  # Set release_year to None if not provided or not a valid integer
 
     # Get a reference to the DynamoDB subscriptions table
     subscriptions_table = dynamodb.Table(subscriptions_table_name)
@@ -641,9 +652,7 @@ def unsubscribe():
     response = subscriptions_table.delete_item(
         Key={
             'user_name': user_name,
-            'title': title,
-            'release_year': release_year,
-            'artist': artist
+            'title': title
         }
     )
 
@@ -653,6 +662,7 @@ def unsubscribe():
         flash("Failed to unsubscribe")
 
     return redirect("/main-page")
+
 
 
 
