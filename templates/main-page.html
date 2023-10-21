@@ -40,14 +40,19 @@
         <h3>Search Results:</h3>
         <ul>
             {% for item in search_results %}
-            <li>Title: {{ item.title }}, Year: {{ item.year }}, Artist: {{ item.artist }}</li>
+            <li>
+                <a href="{{ item.web_url }}" target="_blank">
+                    Title: {{ item.title }}, Year: {{ item.year }}, Artist: {{ item.artist }}
+                </a>
+                <img src="{{ item.img_url }}" alt="{{ item.artist }} Image">
+                <button class="btn btn-primary">Subscribe</button>
+            </li>
             {% endfor %}
         </ul>
         {% else %}
         <p>No results found.</p>
-        {% endif %}        
+        {% endif %}
     </div>
-
 
     <!-- Logout Link -->
     <a href="/logout">Logout</a>
