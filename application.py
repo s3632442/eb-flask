@@ -64,10 +64,10 @@ def login():
                 provided_username == entity["user_name"] and
                 provided_password == entity["password"]
             ):
-                # Valid credentials, redirect to user-home page and store user_name in the session
+                # Valid credentials, redirect to main-page page and store user_name in the session
                 session['user_name'] = entity["user_name"]
                 flash("Logged in")
-                return redirect("/user-home")
+                return redirect("/main-page")
 
         # Invalid credentials, show an error message
         flash("Invalid username or password")
@@ -75,9 +75,9 @@ def login():
     return render_template("login.html", login_details=login_details)
 
 
-@app.route("/user-home")
+@app.route("/main-page")
 def user_home():
-    return render_template("user-home.html")
+    return render_template("main-page.html")
 
 def create_login_table(dynamodb=None):
     if not dynamodb:
@@ -319,6 +319,80 @@ if not table_exists_and_populated(table_name, dynamodb):
     load_data_to_table()  # Load data from a2.json into the table if it's empty
     json_file_path = 'a2.json'  # Define the path to your JSON file
     download_and_upload_images(json_file_path)  # Pass json_file_path as an argument
+
+@app.route("/logout")
+def logout():
+    # Clear the user's session
+    session.clear()
+    flash("Logged out")  # Optional: Display a message to indicate successful logout
+    return redirect("/login")
+
+music_table_name = 'music'
+
+@app.route("/search", methods=["POST"])
+def search():
+    # Retrieve user input from the form
+    title = request.form.get("title")
+    year = request.form.get("year")
+    artist = request.form.get("artist")
+
+    # Debug: Print the user input
+    print("User Input - Title:", title)
+    print("User Input - Year:", year)
+    print("User Input - Artist:", artist)
+
+    # Initialize the filter expression and expression attribute values
+    filter_expression = ""
+    expression_attribute_values = {}
+
+    # Debug: Print the initial filter expression and values
+    print("Initial Filter Expression:", filter_expression)
+    print("Initial Expression Attribute Values:", expression_attribute_values)
+
+    # Initialize the DynamoDB resource and get a reference to the table
+    dynamodb = boto3.resource('dynamodb', region_name='us-east-1')
+    table = dynamodb.Table(music_table_name)
+
+    # Create a filter expression based on user input
+    filter_expression_parts = []
+
+    if artist:
+        filter_expression_parts.append("contains(artist, :artist)")
+        expression_attribute_values[":artist"] = artist
+    if title:
+        filter_expression_parts.append("contains(title, :title)")
+        expression_attribute_values[":title"] = title
+    if year and year.isdigit():
+        filter_expression_parts.append("year = :year")
+        expression_attribute_values[":year"] = int(year)
+
+    # Combine filter expressions with "AND" if there are multiple conditions
+    if filter_expression_parts:
+        filter_expression = " AND ".join(filter_expression_parts)
+
+    # Debug: Print the filter expression after combining user input
+    print("Filter Expression after Combining User Input:", filter_expression)
+
+    # Check if no search criteria are provided
+    if not filter_expression:
+        # Handle the case where no attributes are passed in
+        message = "Please enter search criteria."
+        return render_template("main-page.html", message=message)
+
+    # Create a DynamoDB query based on the filter expression
+    query = table.scan(
+        FilterExpression=filter_expression,
+        ExpressionAttributeValues=expression_attribute_values
+    )
+
+    # Retrieve the matching items
+    items = query.get("Items", [])
+
+    # After the query
+    print("Query results:", items)
+
+    # Pass the search results to the main-page template
+    return render_template("main-page.html", search_results=items)
 
 
 if __name__ == '__main__':    
