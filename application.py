@@ -125,30 +125,28 @@ def create_login_table(dynamodb=None):
     table_name = 'Login'
     table = dynamodb.Table(table_name)
 
-    # Check if the table exists
-    if table.table_status != 'ACTIVE':
-        # Table doesn't exist, so create it
-        table = dynamodb.create_table(
-            TableName=table_name,
-            KeySchema=[
-                {
-                    'AttributeName': 'email',
-                    'KeyType': 'HASH'  # Partition key
-                },
-            ],
-            AttributeDefinitions=[
-                {
-                    'AttributeName': 'email',
-                    'AttributeType': 'S'
-                },
-            ],
-            ProvisionedThroughput={
-                'ReadCapacityUnits': 10,
-                'WriteCapacityUnits': 10
-            }
-        )
-        # Wait for the table to be created (this can take some time)
-        table.wait_until_exists()
+    # Table doesn't exist, so create it
+    table = dynamodb.create_table(
+        TableName=table_name,
+        KeySchema=[
+            {
+                'AttributeName': 'email',
+                'KeyType': 'HASH'  # Partition key
+            },
+        ],
+        AttributeDefinitions=[
+            {
+                'AttributeName': 'email',
+                'AttributeType': 'S'
+            },
+        ],
+        ProvisionedThroughput={
+            'ReadCapacityUnits': 10,
+            'WriteCapacityUnits': 10
+        }
+    )
+    # Wait for the table to be created (this can take some time)
+    table.wait_until_exists()
     
     return table
 
@@ -223,7 +221,7 @@ def table_exists(table_name):
     return table_name in existing_tables['TableNames']
 
 def create_music_table():
-    if not table_exists_and_populated(table_name, dynamodb):
+    
         try:
             table = dynamodb.create_table(
                 TableName=table_name,
@@ -248,9 +246,7 @@ def create_music_table():
             print(f'Table {table_name} has been created.')
         except Exception as e:
             print(f'Error creating table: {e}')
-    else:
-        print(f'Table {table_name} already exists and is populated. Skipping table creation.')
-
+    
 def load_data_to_table():
     # Check if the table already has data
     table = dynamodb.Table(table_name)
@@ -664,23 +660,31 @@ def unsubscribe():
     return redirect("/main-page")
 
 
-
-
 # Define the table name and attributes for the music table
 music_table_name = 'music'
 subscriptions_table_name = 'subscriptions'
+login_table_name = 'Login'
 
+if not table_exists_and_populated(login_table_name, dynamodb):
+    create_login_table()  # Create the 'Login' table
+    insert_initial_logins()  # Insert initial login data
+else:
+    print(f'Table {login_table_name} already exists and is populated. Skipping table creation.')
 
-# Check if the music table exists and is populated
 if not table_exists_and_populated(music_table_name, dynamodb):
     create_music_table()  # Create the DynamoDB music table if it doesn't exist
     load_data_to_table()  # Load data from a2.json into the music table if it's empty
     json_file_path = 'a2.json'  # Define the path to your JSON file
     download_and_upload_images(json_file_path)  # Pass json_file_path as an argument
+else:
+    print(f'Table {music_table_name} already exists and is populated. Skipping table creation.')
 
-# Check if the subscriptions table exists
-if not table_exists(subscriptions_table_name):
+if not table_exists_and_populated(subscriptions_table_name, dynamodb):
     create_subscriptions_table()  # Create the DynamoDB subscriptions table if it doesn't exist
+else:
+    print(f'Table {subscriptions_table_name} already exists and is populated. Skipping table creation.')
+
+
 
 if __name__ == '__main__':    
     app.run(host='0.0.0.0')
