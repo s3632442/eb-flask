@@ -64,10 +64,10 @@ def login():
                 provided_username == entity["user_name"] and
                 provided_password == entity["password"]
             ):
-                # Valid credentials, redirect to user-home page and store user_name in the session
+                # Valid credentials, redirect to main-page page and store user_name in the session
                 session['user_name'] = entity["user_name"]
                 flash("Logged in")
-                return redirect("/user-home")
+                return redirect("/main-page")
 
         # Invalid credentials, show an error message
         flash("Invalid username or password")
@@ -75,9 +75,9 @@ def login():
     return render_template("login.html", login_details=login_details)
 
 
-@app.route("/user-home")
+@app.route("/main-page")
 def user_home():
-    return render_template("user-home.html")
+    return render_template("main-page.html")
 
 def create_login_table(dynamodb=None):
     if not dynamodb:
@@ -320,6 +320,12 @@ if not table_exists_and_populated(table_name, dynamodb):
     json_file_path = 'a2.json'  # Define the path to your JSON file
     download_and_upload_images(json_file_path)  # Pass json_file_path as an argument
 
+@app.route("/logout")
+def logout():
+    # Clear the user's session
+    session.clear()
+    flash("Logged out")  # Optional: Display a message to indicate successful logout
+    return redirect("/login")
 
 if __name__ == '__main__':    
     app.run(host='0.0.0.0')
