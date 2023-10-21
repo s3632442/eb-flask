@@ -327,5 +327,70 @@ def logout():
     flash("Logged out")  # Optional: Display a message to indicate successful logout
     return redirect("/login")
 
+music_table_name = 'music'
+
+@app.route("/search", methods=["POST"])
+def search():
+    # Retrieve user input from the form
+    title = request.form.get("title")
+    year = request.form.get("year")
+    artist = request.form.get("artist")
+
+    # Debug: Print the user input
+    print("User Input - Title:", title)
+    print("User Input - Year:", year)
+    print("User Input - Artist:", artist)
+
+    # Initialize the filter expression and expression attribute values
+    filter_expression = ""
+    expression_attribute_values = {}
+
+    # Debug: Print the initial filter expression and values
+    print("Initial Filter Expression:", filter_expression)
+    print("Initial Expression Attribute Values:", expression_attribute_values)
+
+    # Initialize the DynamoDB resource and get a reference to the table
+    dynamodb = boto3.resource('dynamodb', region_name='us-east-1')
+    table = dynamodb.Table(music_table_name)
+
+    # Create a filter expression based on user input
+    filter_expression_parts = []
+    
+    if artist:
+        filter_expression_parts.append("contains(artist, :artist)")
+        expression_attribute_values[":artist"] = artist
+    if title:
+        filter_expression_parts.append("contains(title, :title)")
+        expression_attribute_values[":title"] = title
+    if year and year.isdigit():
+        filter_expression_parts.append("year = :year")
+        expression_attribute_values[":year"] = int(year)
+
+    # Combine filter expressions with "AND" if there are multiple conditions
+    if filter_expression_parts:
+        filter_expression = " AND ".join(filter_expression_parts)
+
+    # Debug: Print the filter expression after combining user input
+    print("Filter Expression after Combining User Input:", filter_expression)
+
+    # Create a DynamoDB query based on the filter expression
+    query = table.scan(
+        FilterExpression=filter_expression,
+        ExpressionAttributeValues=expression_attribute_values
+    )
+
+    # Retrieve the matching items
+    items = query.get("Items", [])
+
+    # After the query
+    print("Query results:", items)
+
+    # Pass the search results to the main-page template
+    return render_template("main-page.html", search_results=items)
+
+
+
+
+
 if __name__ == '__main__':    
     app.run(host='0.0.0.0')

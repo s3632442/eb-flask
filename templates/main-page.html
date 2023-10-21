@@ -21,8 +21,33 @@
     <!-- Query Area -->
     <div id="query-area">
         <h2>Query Area</h2>
-        <!-- Add content related to the query area here -->
+        <form method="post" action="/search">
+            <div class="form-group">
+                <label for="title">Title:</label>
+                <input type="text" id="title" name="title">
+            </div>
+            <div class="form-group">
+                <label for="year">Year:</label>
+                <input type="text" id="year" name="year">
+            </div>
+            <div class="form-group">
+                <label for="artist">Artist:</label>
+                <input type="text" id="artist" name="artist">
+            </div>
+            <button type="submit" class="btn btn-primary">Query</button>
+        </form>
+        {% if search_results %}
+        <h3>Search Results:</h3>
+        <ul>
+            {% for item in search_results %}
+            <li>Title: {{ item.title }}, Year: {{ item.year }}, Artist: {{ item.artist }}</li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p>No results found.</p>
+        {% endif %}        
     </div>
+
 
     <!-- Logout Link -->
     <a href="/logout">Logout</a>
