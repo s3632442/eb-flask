@@ -46,41 +46,40 @@ def read_all_entities(table_name):
         return []
 
 @app.route("/login", methods=["GET", "POST"])
-@app.route("/login", methods=["GET", "POST"])
 def login():
     login_details = []  # Initialize an empty list for login details
-    
+
     # Retrieve login details from DynamoDB
     table_name = 'Login'  # Replace with your table name
     login_details = read_all_entities(table_name)  # Get login details
 
     if request.method == "POST":
-        # Obtain the provided username and password
-        provided_username = request.form.get("username")
+        # Obtain the provided email and password
+        provided_email = request.form.get("email")
         provided_password = request.form.get("password")
-        print("Provided Username:", provided_username)
+        print("Provided Email:", provided_email)
         print("Provided Password:", provided_password)
 
-    
         for entity in login_details:
             if (
-                provided_username == entity["user_name"] and
+                provided_email == entity["email"] and
                 provided_password == entity["password"]
             ):
-                # Valid credentials, redirect to main-page page and store user_name in the session
+                # Valid credentials, redirect to main-page and store the email in the session
+                session['email'] = entity["email"]
                 session['user_name'] = entity["user_name"]
                 flash("Logged in")
                 return redirect("/main-page")
 
         # Invalid credentials, show an error message
-        flash("Invalid username or password")
-    
+        flash("Invalid email or password")
+
     return render_template("login.html", login_details=login_details)
 
 
 @app.route("/main-page")
 def user_home():
-    if 'user_name' in session:
+    if 'user_name' in session:  # Check if the user is logged in
         user_name = session['user_name']
 
         # Retrieve the user's subscriptions from DynamoDB
@@ -420,11 +419,11 @@ def search():
     # Retrieve the matching items (search results)
     search_results = query.get("Items", [])
 
-    if 'user_name' in session:
-        user_name = session['user_name']
+    if 'email' in session:
+        email = session['email']
 
         # Retrieve the user's subscriptions from DynamoDB
-        subscriptions = get_user_subscriptions(user_name)
+        subscriptions = get_user_subscriptions(email)
 
         # Create a list to store subscribed music
         subscribed_music = []
@@ -665,7 +664,7 @@ def register():
     if request.method == "POST":
         # Retrieve user input from the registration form
         email = request.form.get("email")
-        username = request.form.get("username")
+        username = request.form.get("username")  # You might want to remove this line if you no longer use the username field
         password = request.form.get("password")
 
         # Check if the entered email is unique by querying the 'Login' table
@@ -680,8 +679,8 @@ def register():
         else:
             # Email is unique, so insert the new user information into the 'Login' table
             login_table.put_item(Item={
-                'email': email,
-                'user_name': username,
+                'email': email,  # Use the email address instead of username
+                'user_name': username,  # You might want to remove this line if you no longer use the username field
                 'password': password
             })
 
@@ -690,7 +689,6 @@ def register():
             return redirect("/login")
 
     return render_template("register.html")
-
 
 # Define the table name and attributes for the music table
 music_table_name = 'music'
