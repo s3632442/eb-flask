@@ -660,6 +660,38 @@ def unsubscribe():
     return redirect("/main-page")
 
 
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    if request.method == "POST":
+        # Retrieve user input from the registration form
+        email = request.form.get("email")
+        username = request.form.get("username")
+        password = request.form.get("password")
+
+        # Check if the entered email is unique by querying the 'Login' table
+        login_table = dynamodb.Table('Login')
+
+        response = login_table.get_item(
+            Key={'email': email}
+        )
+
+        if 'Item' in response:
+            flash("The email already exists")
+        else:
+            # Email is unique, so insert the new user information into the 'Login' table
+            login_table.put_item(Item={
+                'email': email,
+                'user_name': username,
+                'password': password
+            })
+
+            # Redirect the user to the login page
+            flash("Registration successful. You can now log in with your new email and password.")
+            return redirect("/login")
+
+    return render_template("register.html")
+
+
 # Define the table name and attributes for the music table
 music_table_name = 'music'
 subscriptions_table_name = 'subscriptions'
