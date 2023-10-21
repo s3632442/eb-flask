@@ -12,63 +12,73 @@
         <p>Welcome, {{ session['user_name'] }}</p>
         <!-- Add content related to the user area here -->
     </div>
+    
+   <!-- Subscription Area -->
     <!-- Subscription Area -->
     <div id="subscription-area">
         <h2>Subscription Area</h2>
-        <h3>Search Results:</h3>
-        <ul>
-            {% for item in search_results %}
-            <li>
-                <a href="{{ item.web_url }}" target="_blank">
-                    Title: {{ item.title }}, Year: {{ item.year }}, Artist: {{ item.artist }}
-                </a>
-                <img src="{{ item.img_url }}" alt="{{ item.artist }} Image">
-                <form method="post" action="/subscribe">
-                    <input type="hidden" name="title" value="{{ item.title }}">
-                    <input type="hidden" name="year" value="{{ item.year }}">
-                    <input type="hidden" name="artist" value="{{ item.artist }}">
-                    <button type="submit" class="btn btn-primary">Subscribe</button>
-                </form>
-            </li>
-            {% endfor %}
-        </ul>
-    </div>
-
-    <!-- Query Area -->
-    <div id="query-area">
-        <h2>Query Area</h2>
-        <form method="post" action="/search">
-            <div class="form-group">
-                <label for="title">Title:</label>
-                <input type="text" id="title" name="title">
-            </div>
-            <div class="form-group">
-                <label for="year">Year:</label>
-                <input type="text" id="year" name="year">
-            </div>
-            <div class="form-group">
-                <label for="artist">Artist:</label>
-                <input type="text" id="artist" name="artist">
-            </div>
-            <button type="submit" class="btn btn-primary">Query</button>
-        </form>
-        {% if search_results %}
-        <h3>Search Results:</h3>
-        <ul>
-            {% for item in search_results %}
-            <li>
-                <a href="{{ item.web_url }}" target="_blank">
-                    Title: {{ item.title }}, Year: {{ item.year }}, Artist: {{ item.artist }}
-                </a>
-                <img src="{{ item.img_url }}" alt="{{ item.artist }} Image">
-                <button class="btn btn-primary">Subscribe</button>
-            </li>
-            {% endfor %}
-        </ul>
+        {% if subscriptions %}
+            <h3>Your Subscriptions:</h3>
+            <ul>
+                {% for item in subscriptions %}
+                    <li>
+                        Title: {{ item.title }}, Year: {{ item.release_year }}, Artist: {{ item.artist }}
+                        <img src="{{ item.img_url }}" alt="{{ item.artist }} Image">
+                        <form method="post" action="/unsubscribe">
+                            <input type="hidden" name="title" value="{{ item.title }}">
+                            <input type="hidden" name="year" value="{{ item.release_year }}">
+                            <input type="hidden" name="artist" value="{{ item.artist }}">
+                            <button type="submit" class="btn btn-danger">Remove</button>
+                        </form>
+                    </li>
+                {% endfor %}
+            </ul>
         {% else %}
-        <p>No results found.</p>
+            <p>No subscriptions found.</p>
         {% endif %}
     </div>
+
+<!-- Query Area -->
+<div id="query-area">
+    <h2>Query Area</h2>
+    <form method="post" action="/search">
+        <div class="form-group">
+            <label for="title">Title:</label>
+            <input type="text" id="title" name="title">
+        </div>
+        <div class="form-group">
+            <label for="year">Year:</label>
+            <input type="text" id="year" name="year">
+        </div>
+        <div class="form-group">
+            <label for="artist">Artist:</label>
+            <input type="text" id="artist" name="artist">
+        </div>
+        <button type="submit" class="btn btn-primary">Query</button>
+    </form>
+    {% if search_results %}
+    <h3>Search Results:</h3>
+    <ul>
+        {% for item in search_results %}
+        <li>
+            <a href="{{ item.web_url }}" target="_blank">
+                Title: {{ item.title }}, Year: {{ item.year }}, Artist: {{ item.artist }}
+            </a>
+            <img src="{{ item.img_url }}" alt="{{ item.artist }} Image">
+            <form method="post" action="/subscribe" style="display: inline;">
+                <input type="hidden" name="title" value="{{ item.title }}">
+                <input type="hidden" name="year" value="{{ item.year }}">
+                <input type="hidden" name="artist" value="{{ item.artist }}">
+                <input type="hidden" name="img_url" value="{{ item.img_url }}">
+                <button type="submit" class="btn btn-primary">Subscribe</button>
+            </form>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p>No results found.</p>
+    {% endif %}
+</div>
 
     <!-- Logout Link -->
     <a href="/logout">Logout</a>
