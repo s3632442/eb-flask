@@ -77,7 +77,13 @@ def login():
 
 @app.route("/main-page")
 def user_home():
-    return render_template("main-page.html")
+    if 'user_name' in session:
+        user_name = session['user_name']
+        # Retrieve the user's subscriptions from DynamoDB
+        subscriptions = get_user_subscriptions(user_name)
+        return render_template("main-page.html", subscriptions=subscriptions)
+    else:
+        return render_template("main-page.html")
 
 def create_login_table(dynamodb=None):
     if not dynamodb:
@@ -394,6 +400,85 @@ def search():
     # Pass the search results to the main-page template
     return render_template("main-page.html", search_results=items)
 
+# Modify your /subscribe route to store the subscription information in DynamoDB
+@app.route("/subscribe", methods=["POST"])
+def subscribe():
+    if 'user_name' not in session:
+        flash("Please log in to subscribe.")
+        return redirect("/login")
+
+    # Retrieve the subscribed music details from the form
+    title = request.form.get("title")
+    year = request.form.get("year")
+    artist = request.form.get("artist")
+    user_name = session['user_name']
+
+    # Create a new item in the subscriptions table to store the subscription information
+    table = dynamodb.Table(table_name)
+
+    table.put_item(Item={
+        'user_name': user_name,
+        'title': title,
+        'year': year,
+        'artist': artist
+    })
+
+    flash(f"Subscribed to '{title}' by {artist}")
+    return redirect("/main-page")
+
+
+table_name = 'subscriptions'  # Create a new DynamoDB table for subscriptions
+
+def create_subscriptions_table():
+    # Define the table name and attributes for the subscriptions table
+    table = dynamodb.create_table(
+        TableName=table_name,
+        KeySchema=[
+            {
+                'AttributeName': 'user_name',
+                'KeyType': 'HASH'  # Partition key
+            },
+            {
+                'AttributeName': 'title',
+                'KeyType': 'RANGE'  # Sort key
+            }
+        ],
+        AttributeDefinitions=[
+            {
+                'AttributeName': 'user_name',
+                'AttributeType': 'S'
+            },
+            {
+                'AttributeName': 'title',
+                'AttributeType': 'S'
+            }
+        ],
+        ProvisionedThroughput={
+            'ReadCapacityUnits': 5,
+            'WriteCapacityUnits': 5
+        }
+    )
+    table.wait_until_exists()
+    print(f'Table {table_name} has been created.')
+
+def get_user_subscriptions(user_name):
+    # Initialize the DynamoDB resource and get a reference to the subscriptions table
+    dynamodb = boto3.resource('dynamodb', region_name='us-east-1')
+    table_name = 'subscriptions'  # Replace with your subscriptions table name
+    table = dynamodb.Table(table_name)
+
+    # Use the Query operation to retrieve a user's subscriptions based on their user_name
+    response = table.query(
+        IndexName='UserSubscriptionsIndex',  # If you have a Global Secondary Index (GSI)
+        KeyConditionExpression='#user = :user_name',
+        ExpressionAttributeNames={'#user': 'user'},
+        ExpressionAttributeValues={':user_name': user_name}
+    )
+
+    # Retrieve the matching items (user's subscriptions)
+    items = response.get("Items", [])
+
+    return items
 
 if __name__ == '__main__':    
     app.run(host='0.0.0.0')
