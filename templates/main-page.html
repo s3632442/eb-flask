@@ -2,83 +2,91 @@
 <html>
 <head>
     <title>User Home Page</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
 </head>
 <body>
-    <h1>Welcome to Your User Home Page</h1>
+    <div class="container">
+        <h1>Welcome to Your User Home Page</h1>
 
-    <!-- User Area -->
-    <div id="user-area">
-        <h2>User Area</h2>
-        <p>Welcome, {{ session['user_name'] }}</p>
-        <!-- Add content related to the user area here -->
-    </div>
-<!-- Subscription Area -->
-<div id="subscription-area">
-    <h2>Subscription Area</h2>
-    {% if subscriptions %}
-        <h3>Your Subscriptions:</h3>
-        <ul>
-            {% for item in subscriptions %}
-                <li>
-                    Title: {{ item.title }}, Year: {{ item.release_year }}, Artist: {{ item.artist }}
-                    <!-- Display the subscribed image -->
-                    <img src="{{ item.img_url }}" alt="{{ item.artist }} Image">
-                    <form method="post" action="/unsubscribe">
-                        <input type="hidden" name="title" value="{{ item.title }}">
-                        <input type="hidden" name="year" value="{{ item.release_year }}">
-                        <input type="hidden" name="artist" value="{{ item.artist }}">
-                        <button type="submit" class="btn btn-danger">Remove</button>
-                    </form>
-                </li>
-            {% endfor %}
-        </ul>
-    {% else %}
-        <p>No subscriptions found.</p>
-    {% endif %}
-</div>
-<!-- Query Area -->
-<div id="query-area">
-    <h2>Query Area</h2>
-    <form method="post" action="/search">
-        <div class="form-group">
-            <label for="title">Title:</label>
-            <input type="text" id="title" name="title">
+        <!-- User Area -->
+        <div id="user-area" class="mt-4">
+            <h2>User Area</h2>
+            <p>Welcome, {{ session['user_name'] }}</p>
         </div>
-        <div class="form-group">
-            <label for="year">Year:</label>
-            <input type="text" id="year" name="year">
+
+        <!-- Subscription Area -->
+        <div id="subscription-area" class="mt-4">
+            <h2>Subscription Area</h2>
+            {% if subscriptions %}
+                <h3>Your Subscriptions:</h3>
+                <ul class="list-group">
+                    {% for item in subscriptions %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            Title: {{ item.title }}
+                            <span class="badge badge-primary badge-pill">{{ item.release_year }}</span>
+                            Artist: {{ item.artist }}
+                            <img src="{{ item.img_url }}" alt="{{ item.artist }} Image" class="img-thumbnail">
+                            <form method="post" action="/unsubscribe">
+                                <input type="hidden" name="title" value="{{ item.title }}">
+                                <input type="hidden" name="year" value="{{ item.release_year }}">
+                                <input type="hidden" name="artist" value="{{ item.artist }}">
+                                <button type="submit" class="btn btn-danger">Remove</button>
+                            </form>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p>No subscriptions found.</p>
+            {% endif %}
         </div>
-        <div class="form-group">
-            <label for="artist">Artist:</label>
-            <input type="text" id="artist" name="artist">
-        </div>
-        <button type="submit" class="btn btn-primary">Query</button>
-    </form>
-    {% if search_results %}
-    <h3>Search Results:</h3>
-    <ul>
-        {% for item in search_results %}
-        <li>
-            Title: {{ item.title }}, Year: {{ item.year }}, Artist: {{ item.artist }}
-            <img src="{{ item.img_url }}" alt="{{ item.artist }} Image">
-            <form method="post" action="/subscribe" style="display: inline;">
-                <input type="hidden" name="title" value="{{ item.title }}">
-                <input type="hidden" name="year" value="{{ item.year }}">
-                <input type="hidden" name="artist" value="{{ item.artist }}">
-                <input type="hidden" name="img_url" value="{{ item.img_url }}">
-                <button type="submit" class="btn btn-primary">Subscribe</button>
+
+        <!-- Query Area -->
+        <div id="query-area" class="mt-4">
+            <h2>Query Area</h2>
+            <form method="post" action="/search">
+                <div class="form-group">
+                    <label for="title">Title:</label>
+                    <input type="text" id="title" name="title" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="year">Year:</label>
+                    <input type="text" id="year" name="year" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="artist">Artist:</label>
+                    <input type="text" id="artist" name="artist" class="form-control">
+                </div>
+                <button type="submit" class="btn btn-primary">Query</button>
             </form>
-        </li>
-        {% endfor %}
-    </ul>
-    {% else %}
-    <p>No results found.</p>
-    {% endif %}
-</div>
-
+            {% if search_results %}
+                <h3>Search Results:</h3>
+                <ul class="list-group">
+                    {% for item in search_results %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            Title: {{ item.title }}
+                            <span class="badge badge-primary badge-pill">{{ item.year }}</span>
+                            Artist: {{ item.artist }}
+                            <img src="{{ item.img_url }}" alt="{{ item.artist }} Image" class="img-thumbnail">
+                            <form method="post" action="/subscribe" style="display: inline;">
+                                <input type="hidden" name="title" value="{{ item.title }}">
+                                <input type="hidden" name="year" value="{{ item.year }}">
+                                <input type="hidden" name="artist" value="{{ item.artist }}">
+                                <input type="hidden" name="img_url" value="{{ item.img_url }}">
+                                <button type="submit" class="btn btn-primary">Subscribe</button>
+                            </form>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p>No results found.</p>
+            {% endif %}
+        </div>
+    </div>
 
     <!-- Logout Link -->
-    <a href="/logout">Logout</a>
+    <a href="/logout" class="btn btn-secondary mt-3">Logout</a>
 
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
 </body>
 </html>
