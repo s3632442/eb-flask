@@ -180,7 +180,7 @@ def insert_initial_logins(dynamodb=None):
 
     table = dynamodb.Table('Login')
     for i in range(10):
-        email = f"s3######{i}@student.rmit.edu.au"
+        email = f"s3632442{i}@student.rmit.edu.au"
         username = f"Firstname Lastname{i}"
         password = generate_password(i)
 
