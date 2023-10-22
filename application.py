@@ -703,7 +703,6 @@ login_table_name = 'Login'
 
 if not table_exists_and_populated(login_table_name, dynamodb):
     create_login_table()  # Create the 'Login' table
-    insert_initial_logins()  # Insert initial login data
 else:
     print(f'Table {login_table_name} already exists and is populated. Skipping table creation.')
 
@@ -718,6 +717,11 @@ else:
 # Allow some time for AWS resources to be created (e.g., use time.sleep)
 import time
 time.sleep(10)  # Adjust the sleep duration based on your experience
+
+if not table_exists_and_populated(login_table_name, dynamodb):
+    insert_initial_logins()  # Insert initial login data
+else:
+    print(f'Table {login_table_name} already exists and is populated. Skipping table population.')
 
 if not table_exists_and_populated(music_table_name, dynamodb):
     load_data_to_table()  # Load data from a2.json into the music table if it's empty
