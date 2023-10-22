@@ -735,6 +735,11 @@ else:
     print(f'Table {music_table_name} already exists and is populated. Skipping table creation.')
 
 
+if not table_exists_and_populated(subscriptions_table_name, dynamodb):
+    exponential_backoff(5, 2, create_subscriptions_table)
+else:
+    print(f'Table {subscriptions_table_name} already exists and is populated. Skipping table creation.')
+
 
 if __name__ == '__main__':    
     app.run(host='0.0.0.0')
