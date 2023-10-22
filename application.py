@@ -6,6 +6,9 @@ import json
 import os
 import requests
 import boto3
+import time
+import random
+import botocore
 
 app = Flask(__name__, static_url_path='/static')
 app.secret_key = 'ac3b06a1-6db9-4e2a-b74a-ea24572ed710'
@@ -46,43 +49,41 @@ def read_all_entities(table_name):
         return []
 
 @app.route("/login", methods=["GET", "POST"])
+@app.route("/login", methods=["GET", "POST"])
 def login():
     login_details = []  # Initialize an empty list for login details
-
+    
     # Retrieve login details from DynamoDB
     table_name = 'Login'  # Replace with your table name
     login_details = read_all_entities(table_name)  # Get login details
 
     if request.method == "POST":
-        # Obtain the provided email and password
-        provided_email = request.form.get("email")
+        # Obtain the provided username and password
+        provided_username = request.form.get("username")
         provided_password = request.form.get("password")
-        print("Provided Email:", provided_email)
+        print("Provided Username:", provided_username)
         print("Provided Password:", provided_password)
 
-        valid_credentials = False  # Flag to check if credentials are valid
-
+    
         for entity in login_details:
             if (
-                provided_email == entity["email"] and
+                provided_username == entity["user_name"] and
                 provided_password == entity["password"]
             ):
-                # Valid credentials, redirect to main-page and store the email in the session
-                session['email'] = entity["email"]
+                # Valid credentials, redirect to main-page page and store user_name in the session
                 session['user_name'] = entity["user_name"]
-                valid_credentials = True
                 flash("Logged in")
                 return redirect("/main-page")
 
         # Invalid credentials, show an error message
-        if not valid_credentials:
-            flash("Email or password is invalid")
-
+        flash("Invalid username or password")
+    
     return render_template("login.html", login_details=login_details)
+
 
 @app.route("/main-page")
 def user_home():
-    if 'user_name' in session:  # Check if the user is logged in
+    if 'user_name' in session:
         user_name = session['user_name']
 
         # Retrieve the user's subscriptions from DynamoDB
@@ -112,7 +113,7 @@ def user_home():
                     'artist': artist,
                     'release_year': release_year,
                     'web_url': music_info.get('web_url'),
-                    'img_url': music_info.get('img_url')  # Store the image URL
+                    'img_url': music_info.get('image_url')
                 })
 
         return render_template("main-page.html", subscriptions=subscribed_music)
@@ -172,17 +173,13 @@ def delete_all_logins(dynamodb=None):
         table.delete_item(Key={'email': item['email']})
 
 def insert_initial_logins(dynamodb=None):
-
-    table = dynamodb.Table('Login')
-    # Wait for the table to be created (this can take some time)
-    table.wait_until_exists()
     if not dynamodb:
         dynamodb = boto3.resource('dynamodb')
 
     # Delete all existing login entities
     delete_all_logins(dynamodb)
 
-    
+    table = dynamodb.Table('Login')
     for i in range(10):
         email = f"s3######{i}@student.rmit.edu.au"
         username = f"Firstname Lastname{i}"
@@ -256,6 +253,9 @@ def create_music_table():
 def load_data_to_table():
     # Check if the table already has data
     table = dynamodb.Table(table_name)
+
+    # Define a condition to check if data already exists
+    condition = "attribute_not_exists(title)"
 
     if table.item_count > 0:
         print(f'Table {table_name} already has data. Skipping data loading.')
@@ -360,6 +360,9 @@ def logout():
     flash("Logged out")  # Optional: Display a message to indicate successful logout
     return redirect("/login")
 
+music_table_name = 'music'
+
+# ... (your other code)
 
 @app.route("/search", methods=["GET", "POST"])
 def search():
@@ -420,7 +423,7 @@ def search():
     # Retrieve the matching items (search results)
     search_results = query.get("Items", [])
 
-    if 'user_name' in session:  # Check if the user is logged in
+    if 'user_name' in session:
         user_name = session['user_name']
 
         # Retrieve the user's subscriptions from DynamoDB
@@ -430,7 +433,7 @@ def search():
         subscribed_music = []
 
         # Get a reference to the DynamoDB music table
-        music_table = dynamodb.Table(music_table_name)  # Add this line
+        music_table = dynamodb.Table(music_table_name)
 
         # Iterate through the subscriptions and add the subscribed music to the list
         for subscription in subscriptions:
@@ -450,7 +453,7 @@ def search():
                     'artist': artist,
                     'release_year': release_year,
                     'web_url': music_info.get('web_url'),
-                    'img_url': music_info.get('img_url')  # Store the image URL
+                    'img_url': music_info.get('image_url')
                 })
 
         # Pass the subscribed music and search results to the main-page template
@@ -459,57 +462,52 @@ def search():
     # Pass only the search results to the main-page template
     return render_template("main-page.html", search_results=search_results)
 
+
 @app.route("/subscribe", methods=["POST"])
 def subscribe():
     if 'user_name' not in session:
         flash("Please log in to subscribe.")
         return redirect("/login")
 
-    # Retrieve the details of the music item to subscribe
+    # Retrieve the subscribed music details from the request form
     title = request.form.get("title")
     artist = request.form.get("artist")
     user_name = session['user_name']
 
     # Check if release_year is provided in the form
-    release_year = request.form.get("year")
-
-    if release_year is not None and release_year.isdigit():
-        release_year = int(release_year)
+    if "release_year" in request.form:
+        release_year = int(request.form["release_year"])
     else:
-        release_year = None  # Set release_year to None if not provided or not a valid integer
+        release_year = None  # Set release_year to None if not provided
 
-    # Get a reference to the DynamoDB subscriptions table
-    subscriptions_table = dynamodb.Table(subscriptions_table_name)
+    # Create a new item in the subscriptions table to store the subscription information
+    table = dynamodb.Table(subscriptions_table_name)
 
-    # Fetch the image URL from the music table
-    music_table = dynamodb.Table(music_table_name)
+    table.put_item(Item={
+        'user_name': user_name,
+        'title': title,
+        'release_year': release_year,
+        'artist': artist
+    })
 
-    response = music_table.get_item(
-    Key={'title': title}
-)
+    flash(f"Subscribed to '{title}' by {artist}")
 
-    if 'Item' in response:
-        music_info = response['Item']
-        img_url = music_info.get('image_url')
-
-        # Add these print statements to debug
-        print(f"Image URL Retrieved: {img_url}")
-
-        # Store the subscription entry with the image URL
-        subscriptions_table.put_item(Item={
-            'user_name': user_name,
-            'title': title,
-            'release_year': release_year,
-            'artist': artist,
-            'img_url': img_url  # Store the image URL
-        })
-
-        flash(f"Subscribed to '{title}' by {artist}")
-    else:
-        flash("Failed to subscribe")
-
-
+    # Redirect the user back to the main-page
     return redirect("/main-page")
+
+def delete_all_tables():
+    # Initialize the DynamoDB resource
+    dynamodb = boto3.resource('dynamodb', region_name='us-east-1')  # Specify your desired region
+
+    # List all the tables
+    existing_tables = dynamodb.meta.client.list_tables()
+
+    # Iterate through the table names and delete each table
+    for table_name in existing_tables['TableNames']:
+        table = dynamodb.Table(table_name)
+        table.delete()
+
+        print(f"Table '{table_name}' has been deleted.")
 
 
 def delete_subscriptions_table():
@@ -670,10 +668,10 @@ def register():
     if request.method == "POST":
         # Retrieve user input from the registration form
         email = request.form.get("email")
-        username = request.form.get("username")  # You might want to remove this line if you no longer use the username field
+        username = request.form.get("username")
         password = request.form.get("password")
 
-        # Check if the entered email already exists by querying the 'Login' table
+        # Check if the entered email is unique by querying the 'Login' table
         login_table = dynamodb.Table('Login')
 
         response = login_table.get_item(
@@ -685,8 +683,8 @@ def register():
         else:
             # Email is unique, so insert the new user information into the 'Login' table
             login_table.put_item(Item={
-                'email': email,  # Use the email address instead of username
-                'user_name': username,  # You might want to remove this line if you no longer use the username field
+                'email': email,
+                'user_name': username,
                 'password': password
             })
 
@@ -702,37 +700,49 @@ music_table_name = 'music'
 subscriptions_table_name = 'subscriptions'
 login_table_name = 'Login'
 
+
+
+def exponential_backoff(max_retries, base_delay, func, *args, **kwargs):
+    retries = 0
+    while retries < max_retries:
+        try:
+            return func(*args, **kwargs)
+        except botocore.exceptions.ClientError as e:
+            print(f"Error: {e}")
+            if e.response['Error']['Code'] == 'ResourceInUseException':
+                retries += 1
+                if retries < max_retries:
+                    delay = (2 ** retries) * base_delay + random.uniform(0, base_delay)
+                    time.sleep(delay)
+                else:
+                    raise  # Raise an exception if max retries are reached
+
+
+
 if not table_exists_and_populated(login_table_name, dynamodb):
-    create_login_table()  # Create the 'Login' table
+    exponential_backoff(5, 2, create_login_table, dynamodb)
 else:
     print(f'Table {login_table_name} already exists and is populated. Skipping table creation.')
 
+
 if not table_exists_and_populated(music_table_name, dynamodb):
-    create_music_table()  # Create the DynamoDB music table if it doesn't exist
-
-if not table_exists_and_populated(subscriptions_table_name, dynamodb):
-    create_subscriptions_table()  # Create the DynamoDB subscriptions table if it doesn't exist
+    exponential_backoff(5, 2, create_music_table)
 else:
-    print(f'Table {subscriptions_table_name} already exists and is populated. Skipping table creation.')
+    print(f'Table {music_table_name} already exists and is populated. Skipping table creation.')
 
-# Allow some time for AWS resources to be created (e.g., use time.sleep)
-import time
-time.sleep(10)  # Adjust the sleep duration based on your experience
 
 if not table_exists_and_populated(login_table_name, dynamodb):
-    insert_initial_logins()  # Insert initial login data
+    exponential_backoff(5, 2, insert_initial_logins)
 else:
     print(f'Table {login_table_name} already exists and is populated. Skipping table population.')
 
 if not table_exists_and_populated(music_table_name, dynamodb):
-    load_data_to_table()  # Load data from a2.json into the music table if it's empty
+    exponential_backoff(5, 2, load_data_to_table)
     json_file_path = 'a2.json'  # Define the path to your JSON file
-    download_and_upload_images(json_file_path)  # Pass json_file_path as an argument
+    exponential_backoff(5, 2, download_and_upload_images, json_file_path)
 else:
     print(f'Table {music_table_name} already exists and is populated. Skipping table loading.')
 
-# Wait for another moment before starting the Flask app
-time.sleep(5)  # Adjust the sleep duration based on your experience
 
-if __name__ == '__main__':
+if __name__ == '__main__':    
     app.run(host='0.0.0.0')
