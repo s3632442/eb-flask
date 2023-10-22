@@ -2,45 +2,40 @@
 <html>
 <head>
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
 </head>
 <body>
-    <div class="form-container">
-        <form method="post">
-            <label for="email">Email:</label>
-            <input type="text" name="email" required>
-            <br>
-            <label for="password">Password:</label>
-            <input type="password" name="password" required>
-            <br>
-            <input type="submit" value="Login">
-        </form>
-        <div class="register-link">
-            <a href="/register">Register</a>
-        </div>
-        <div>
-            {% with messages = get_flashed_messages() %}
-                {% if messages %}
-                    <ul class="flashes">
-                        {% for message in messages %}
-                            <li>{{ message }}</li>
-                        {% endfor %}
-                    </ul>
-                {% endif %}
-            {% endwith %}
+    <div class="container">
+        <div class="form-container mt-5">
+            <form method="post">
+                <div class="form-group">
+                    <label for="email">Email:</label>
+                    <input type="text" name="email" id="email" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password:</label>
+                    <input type="password" name="password" id="password" class="form-control" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Login</button>
+            </form>
+            <div class="register-link mt-3">
+                <a href="/register">Register</a>
+            </div>
+            <div>
+                {% with messages = get_flashed_messages() %}
+                    {% if messages %}
+                        <ul class="flashes">
+                            {% for message in messages %}
+                                <li class="alert alert-danger">{{ message }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                {% endwith %}
+            </div>
         </div>
     </div>
-    
-    <!-- <div class="login-details">
-        <h2>Login Details</h2>
-        <ul>
-            {% for login_detail in login_details %}
-                <li>Email: {{ login_detail.email }}</li>
-                <li>Username: {{ login_detail.user_name }}</li>
-                <li>Password: {{ login_detail.password }}</li>
-                <br>
-            {% endfor %}
-        </ul>
-    </div> -->
-    
+
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
 </body>
 </html>
