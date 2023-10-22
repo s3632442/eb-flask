@@ -172,13 +172,17 @@ def delete_all_logins(dynamodb=None):
         table.delete_item(Key={'email': item['email']})
 
 def insert_initial_logins(dynamodb=None):
+
+    table = dynamodb.Table('Login')
+    # Wait for the table to be created (this can take some time)
+    table.wait_until_exists()
     if not dynamodb:
         dynamodb = boto3.resource('dynamodb')
 
     # Delete all existing login entities
     delete_all_logins(dynamodb)
 
-    table = dynamodb.Table('Login')
+    
     for i in range(10):
         email = f"s3######{i}@student.rmit.edu.au"
         username = f"Firstname Lastname{i}"
@@ -252,9 +256,6 @@ def create_music_table():
 def load_data_to_table():
     # Check if the table already has data
     table = dynamodb.Table(table_name)
-
-    # Define a condition to check if data already exists
-    condition = "attribute_not_exists(title)"
 
     if table.item_count > 0:
         print(f'Table {table_name} already has data. Skipping data loading.')
