@@ -14,9 +14,23 @@
             <br>
             <input type="submit" value="Login">
         </form>
+        <div class="register-link">
+            <a href="/register">Register</a>
+        </div>
+        <div>
+            {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                    <ul class="flashes">
+                        {% for message in messages %}
+                            <li>{{ message }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            {% endwith %}
+        </div>
     </div>
     
-    <div class="login-details">
+    <!-- <div class="login-details">
         <h2>Login Details</h2>
         <ul>
             {% for login_detail in login_details %}
@@ -26,10 +40,7 @@
                 <br>
             {% endfor %}
         </ul>
-    </div>
-    <!-- Add a link to the registration page -->
-    <div class="register-link">
-        <a href="/register">Don't have an account? Register here</a>
-    </div>
+    </div> -->
+    
 </body>
 </html>

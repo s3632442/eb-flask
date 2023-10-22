@@ -12,31 +12,30 @@
         <p>Welcome, {{ session['user_name'] }}</p>
         <!-- Add content related to the user area here -->
     </div>
-    
-    <!-- Subscription Area -->
-        <div id="subscription-area">
-            <h2>Subscription Area</h2>
-            {% if subscriptions %}
-                <h3>Your Subscriptions:</h3>
-                <ul>
-                    {% for item in subscriptions %}
-                        <li>
-                            Title: {{ item.title }}, Year: {{ item.release_year }}, Artist: {{ item.artist }}
-                            <form method="post" action="/unsubscribe">
-                                <input type="hidden" name="title" value="{{ item.title }}">
-                                <input type="hidden" name="year" value="{{ item.release_year }}">
-                                <input type="hidden" name="artist" value="{{ item.artist }}">
-                                <button type="submit" class="btn btn-danger">Remove</button>
-                            </form>
-                        </li>
-                    {% endfor %}
-                </ul>
-            {% else %}
-                <p>No subscriptions found.</p>
-            {% endif %}
-        </div>
-
-
+<!-- Subscription Area -->
+<div id="subscription-area">
+    <h2>Subscription Area</h2>
+    {% if subscriptions %}
+        <h3>Your Subscriptions:</h3>
+        <ul>
+            {% for item in subscriptions %}
+                <li>
+                    Title: {{ item.title }}, Year: {{ item.release_year }}, Artist: {{ item.artist }}
+                    <!-- Display the subscribed image -->
+                    <img src="{{ item.img_url }}" alt="{{ item.artist }} Image">
+                    <form method="post" action="/unsubscribe">
+                        <input type="hidden" name="title" value="{{ item.title }}">
+                        <input type="hidden" name="year" value="{{ item.release_year }}">
+                        <input type="hidden" name="artist" value="{{ item.artist }}">
+                        <button type="submit" class="btn btn-danger">Remove</button>
+                    </form>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No subscriptions found.</p>
+    {% endif %}
+</div>
 <!-- Query Area -->
 <div id="query-area">
     <h2>Query Area</h2>

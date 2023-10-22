@@ -60,6 +60,8 @@ def login():
         print("Provided Email:", provided_email)
         print("Provided Password:", provided_password)
 
+        valid_credentials = False  # Flag to check if credentials are valid
+
         for entity in login_details:
             if (
                 provided_email == entity["email"] and
@@ -68,14 +70,15 @@ def login():
                 # Valid credentials, redirect to main-page and store the email in the session
                 session['email'] = entity["email"]
                 session['user_name'] = entity["user_name"]
+                valid_credentials = True
                 flash("Logged in")
                 return redirect("/main-page")
 
         # Invalid credentials, show an error message
-        flash("Invalid email or password")
+        if not valid_credentials:
+            flash("Email or password is invalid")
 
     return render_template("login.html", login_details=login_details)
-
 
 @app.route("/main-page")
 def user_home():
@@ -109,7 +112,7 @@ def user_home():
                     'artist': artist,
                     'release_year': release_year,
                     'web_url': music_info.get('web_url'),
-                    'img_url': music_info.get('image_url')
+                    'img_url': music_info.get('img_url')  # Store the image URL
                 })
 
         return render_template("main-page.html", subscriptions=subscribed_music)
@@ -465,45 +468,51 @@ def subscribe():
         flash("Please log in to subscribe.")
         return redirect("/login")
 
-    # Retrieve the subscribed music details from the request form
+    # Retrieve the details of the music item to subscribe
     title = request.form.get("title")
     artist = request.form.get("artist")
     user_name = session['user_name']
 
     # Check if release_year is provided in the form
-    if "release_year" in request.form:
-        release_year = int(request.form["release_year"])
+    release_year = request.form.get("year")
+
+    if release_year is not None and release_year.isdigit():
+        release_year = int(release_year)
     else:
-        release_year = None  # Set release_year to None if not provided
+        release_year = None  # Set release_year to None if not provided or not a valid integer
 
-    # Create a new item in the subscriptions table to store the subscription information
-    table = dynamodb.Table(subscriptions_table_name)
+    # Get a reference to the DynamoDB subscriptions table
+    subscriptions_table = dynamodb.Table(subscriptions_table_name)
 
-    table.put_item(Item={
-        'user_name': user_name,
-        'title': title,
-        'release_year': release_year,
-        'artist': artist
-    })
+    # Fetch the image URL from the music table
+    music_table = dynamodb.Table(music_table_name)
 
-    flash(f"Subscribed to '{title}' by {artist}")
+    response = music_table.get_item(
+    Key={'title': title}
+)
 
-    # Redirect the user back to the main-page
+    if 'Item' in response:
+        music_info = response['Item']
+        img_url = music_info.get('image_url')
+
+        # Add these print statements to debug
+        print(f"Image URL Retrieved: {img_url}")
+
+        # Store the subscription entry with the image URL
+        subscriptions_table.put_item(Item={
+            'user_name': user_name,
+            'title': title,
+            'release_year': release_year,
+            'artist': artist,
+            'img_url': img_url  # Store the image URL
+        })
+
+        flash(f"Subscribed to '{title}' by {artist}")
+    else:
+        flash("Failed to subscribe")
+
+
     return redirect("/main-page")
-
-def delete_all_tables():
-    # Initialize the DynamoDB resource
-    dynamodb = boto3.resource('dynamodb', region_name='us-east-1')  # Specify your desired region
-
-    # List all the tables
-    existing_tables = dynamodb.meta.client.list_tables()
-
-    # Iterate through the table names and delete each table
-    for table_name in existing_tables['TableNames']:
-        table = dynamodb.Table(table_name)
-        table.delete()
-
-        print(f"Table '{table_name}' has been deleted.")
 
 
 def delete_subscriptions_table():
@@ -667,7 +676,7 @@ def register():
         username = request.form.get("username")  # You might want to remove this line if you no longer use the username field
         password = request.form.get("password")
 
-        # Check if the entered email is unique by querying the 'Login' table
+        # Check if the entered email already exists by querying the 'Login' table
         login_table = dynamodb.Table('Login')
 
         response = login_table.get_item(
@@ -689,6 +698,7 @@ def register():
             return redirect("/login")
 
     return render_template("register.html")
+
 
 # Define the table name and attributes for the music table
 music_table_name = 'music'
