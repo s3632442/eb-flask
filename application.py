@@ -709,18 +709,25 @@ else:
 
 if not table_exists_and_populated(music_table_name, dynamodb):
     create_music_table()  # Create the DynamoDB music table if it doesn't exist
-    load_data_to_table()  # Load data from a2.json into the music table if it's empty
-    json_file_path = 'a2.json'  # Define the path to your JSON file
-    download_and_upload_images(json_file_path)  # Pass json_file_path as an argument
-else:
-    print(f'Table {music_table_name} already exists and is populated. Skipping table creation.')
 
 if not table_exists_and_populated(subscriptions_table_name, dynamodb):
     create_subscriptions_table()  # Create the DynamoDB subscriptions table if it doesn't exist
 else:
     print(f'Table {subscriptions_table_name} already exists and is populated. Skipping table creation.')
 
+# Allow some time for AWS resources to be created (e.g., use time.sleep)
+import time
+time.sleep(10)  # Adjust the sleep duration based on your experience
 
+if not table_exists_and_populated(music_table_name, dynamodb):
+    load_data_to_table()  # Load data from a2.json into the music table if it's empty
+    json_file_path = 'a2.json'  # Define the path to your JSON file
+    download_and_upload_images(json_file_path)  # Pass json_file_path as an argument
+else:
+    print(f'Table {music_table_name} already exists and is populated. Skipping table loading.')
 
-if __name__ == '__main__':    
+# Wait for another moment before starting the Flask app
+time.sleep(5)  # Adjust the sleep duration based on your experience
+
+if __name__ == '__main__':
     app.run(host='0.0.0.0')
