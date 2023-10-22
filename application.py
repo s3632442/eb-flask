@@ -359,9 +359,6 @@ def logout():
     flash("Logged out")  # Optional: Display a message to indicate successful logout
     return redirect("/login")
 
-music_table_name = 'music'
-
-# ... (your other code)
 
 @app.route("/search", methods=["GET", "POST"])
 def search():
@@ -422,17 +419,17 @@ def search():
     # Retrieve the matching items (search results)
     search_results = query.get("Items", [])
 
-    if 'email' in session:
-        email = session['email']
+    if 'user_name' in session:  # Check if the user is logged in
+        user_name = session['user_name']
 
         # Retrieve the user's subscriptions from DynamoDB
-        subscriptions = get_user_subscriptions(email)
+        subscriptions = get_user_subscriptions(user_name)
 
         # Create a list to store subscribed music
         subscribed_music = []
 
         # Get a reference to the DynamoDB music table
-        music_table = dynamodb.Table(music_table_name)
+        music_table = dynamodb.Table(music_table_name)  # Add this line
 
         # Iterate through the subscriptions and add the subscribed music to the list
         for subscription in subscriptions:
@@ -452,7 +449,7 @@ def search():
                     'artist': artist,
                     'release_year': release_year,
                     'web_url': music_info.get('web_url'),
-                    'img_url': music_info.get('image_url')
+                    'img_url': music_info.get('img_url')  # Store the image URL
                 })
 
         # Pass the subscribed music and search results to the main-page template
@@ -460,7 +457,6 @@ def search():
 
     # Pass only the search results to the main-page template
     return render_template("main-page.html", search_results=search_results)
-
 
 @app.route("/subscribe", methods=["POST"])
 def subscribe():
