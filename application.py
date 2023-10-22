@@ -721,27 +721,19 @@ def exponential_backoff(max_retries, base_delay, func, *args, **kwargs):
 
 if not table_exists_and_populated(login_table_name, dynamodb):
     exponential_backoff(5, 2, create_login_table, dynamodb)
+    exponential_backoff(5, 2, insert_initial_logins)
 else:
     print(f'Table {login_table_name} already exists and is populated. Skipping table creation.')
 
 
 if not table_exists_and_populated(music_table_name, dynamodb):
     exponential_backoff(5, 2, create_music_table)
-else:
-    print(f'Table {music_table_name} already exists and is populated. Skipping table creation.')
-
-
-if not table_exists_and_populated(login_table_name, dynamodb):
-    exponential_backoff(5, 2, insert_initial_logins)
-else:
-    print(f'Table {login_table_name} already exists and is populated. Skipping table population.')
-
-if not table_exists_and_populated(music_table_name, dynamodb):
     exponential_backoff(5, 2, load_data_to_table)
     json_file_path = 'a2.json'  # Define the path to your JSON file
     exponential_backoff(5, 2, download_and_upload_images, json_file_path)
 else:
-    print(f'Table {music_table_name} already exists and is populated. Skipping table loading.')
+    print(f'Table {music_table_name} already exists and is populated. Skipping table creation.')
+
 
 
 if __name__ == '__main__':    
