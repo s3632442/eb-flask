@@ -1,0 +1,13 @@
+[Unit]
+Description=Gunicorn instance to serve a2-t1
+After=network.target
+
+[Service]
+User=ubuntu
+Group=www-data
+WorkingDirectory=/home/ubuntu/eb-flask
+Environment="PATH=/home/ubuntu/eb-flask/a2-t1-env/bin"
+ExecStart=/home/ubuntu/eb-flask/a2-t1-env/bin/gunicorn --workers 3 --bind unix:a2-t1.sock -m 007 wsgi:app
+
+[Install]
+WantedBy=multi-user.target
