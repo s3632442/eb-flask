@@ -1,0 +1,36 @@
+vi id_ed22519.pub
+    5  vi id_ed22519
+    6  chmod 600 id_ed22519
+    7  chmod 600 id_ed22519.pub 
+    eval "$(ssh-agent -s)"
+       13  ssh-add .ssh/id_ed22519
+       14  git clone git@github.com:s3632442/eb-flask.git
+       sudo apt update
+       sudo apt install awscli
+          19  aws configure
+          vi .aws/credentials
+            24  vi .aws/config 
+            sudo apt install python3-pip python3-dev build-essential libssl-dev libffi-dev python3-setuptools
+            sudo apt install python3-venv
+            python3 -m venv flask-env
+            source flask-env/bin/activate
+            pip install wheel
+            pip install gunicorn flask
+        
+        sudo ufw allow
+        python application.py
+
+        vi wsgi.py
+        gunicorn --bind 0.0.0.0:5000 wsgi:app
+        deactivate
+        sudo ufw delete allow 5000
+
+        	sudo vi /etc/systemd/a2-t1.service
+        	sudo systemctl start a2-t1.service
+        	sudo systemctl enable a2-t1.service
+        	sudo apt install nginx
+        	sudo vi /etc/nginx/sites-available/a2-t1
+        	sudo ln -s /etc/nginx/sites-available/a2-t1 /etc/nginx/sites-enabled
+        	sudo nginx -t
+        	sudo systemctl restart nginx
+        	sudo ufw allow 'Nginx Full'
