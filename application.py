@@ -692,31 +692,13 @@ def register():
     return render_template("register.html")
 
 
-# Define the table name and attributes for the music table
-music_table_name = 'music'
-subscriptions_table_name = 'subscriptions'
-login_table_name = 'Login'
 
-if not table_exists_and_populated(login_table_name, dynamodb):
+if __name__ == '__main__':    
     create_login_table()  # Create the 'Login' table
     insert_initial_logins()  # Insert initial login data
-else:
-    print(f'Table {login_table_name} already exists and is populated. Skipping table creation.')
-
-if not table_exists_and_populated(music_table_name, dynamodb):
     create_music_table()  # Create the DynamoDB music table if it doesn't exist
     load_data_to_table()  # Load data from a2.json into the music table if it's empty
     json_file_path = 'a2.json'  # Define the path to your JSON file
     download_and_upload_images(json_file_path)  # Pass json_file_path as an argument
-else:
-    print(f'Table {music_table_name} already exists and is populated. Skipping table creation.')
-
-if not table_exists_and_populated(subscriptions_table_name, dynamodb):
     create_subscriptions_table()  # Create the DynamoDB subscriptions table if it doesn't exist
-else:
-    print(f'Table {subscriptions_table_name} already exists and is populated. Skipping table creation.')
-
-
-
-if __name__ == '__main__':    
     app.run(host='0.0.0.0')
